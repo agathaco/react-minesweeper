@@ -99,7 +99,6 @@ body {
 
 .has-bomb {
   transition: background .25s ease-in;
-  background-color: hotpink;
 }
 
 #flag-countdown, #timer {

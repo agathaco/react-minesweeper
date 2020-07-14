@@ -1,3 +1,12 @@
+// TO DO
+// 1. Fix slow rendering
+// 2. Add delay when revealing tiles and bombs
+// 3. Fix timer bug
+// 4. Add sass support
+// 5. Introduce compoenents: Board, Cells, Timer, Dropdown
+
+
+
 import React, { Component } from "react";
 // import { Header } from "./components/Header";
 import "./App.css";
@@ -64,6 +73,7 @@ class App extends Component {
   }
 
   clearBoard = () => {
+    console.clear();
     if (this.state.isTimerOn) this.stopTimer();
     this.setState({ timeDisplay: '000', timerCount: 0, flags: 0, isGameOver: false, tiles: [], isResultTimeVisible: false, isBombHappyFaceVisible: false, isBombSadFaceVisible: false, isContainerAnimated: false })
     this.createBoard();
@@ -137,6 +147,7 @@ class App extends Component {
   }
 
   handleTileClick = (e) => {
+    console.log('handle click', e.target)
     const clickedTileId = parseInt(e.target.id);
     if (!this.state.isTimerOn) this.startTimer();
     this.clickTile(clickedTileId)
@@ -144,44 +155,36 @@ class App extends Component {
 
   //click on tile 
   clickTile = (tileId) => {
+    console.log('clicked')
     const currentTile = this.state.tiles.find(tile => tile.id === tileId)
-    console.log('current tile', currentTile)
 
     if (this.state.isGameOver) return null;
-    if (currentTile.checked || currentTile.flag) return null;
+    if (currentTile.checked || currentTile.flag) {
+      return null;
+    }
     if (currentTile.class === "has-bomb") {
-      console.log('tile has bomb', tileId)
-      currentTile.checked = true
-
       this.gameOver(currentTile);
     } else {
-      let total = currentTile.neighborbombs ? currentTile.neighborbombs : 0;
-      // console.log(total)
+      let total = currentTile.neighborBombs ? currentTile.neighborBombs : 0;
+
       if (total !== 0) {
         currentTile.checked = true
         currentTile.color = this.state.numberColors[currentTile.neighborBombs - 1];
         return
-      } else {
-        // return
       }
-      // update the tiles array with checked status
+    }
+    currentTile.checked = true
+    this.checktile(tileId);
       const tiles = [...this.state.tiles]
       tiles.forEach(tile => {
         if (tile.id === tileId) tile.checked = true
       })
       this.setState({tiles})
-
-      this.checktile(tileId);
-      // console.log(currentTile)
-    }
-    currentTile.checked = true
-
-
+      console.log('processed')
   }
 
   //check neighboring tiles once tile is clicked
   checktile = (tileId) => {
-
     const width = this.state.selectedLevel.width;
     const isLeftEdge = tileId % width === 0;
     const isRightEdge = tileId % width === width - 1;
@@ -189,10 +192,9 @@ class App extends Component {
 
     const loopThroughtiles = (tile) => {
       this.clickTile(tile.id);
-      console.log(tile)
     }
 
-    setTimeout(() => {
+    // setTimeout(() => {
       if (!isRightEdge) {
         if (tiles[tileId + 1 - width])
           loopThroughtiles(tiles[tileId + 1 - width]);
@@ -209,20 +211,13 @@ class App extends Component {
       }
       if (tiles[tileId - width]) loopThroughtiles(tiles[tileId - width]);
       if (tiles[tileId + width]) loopThroughtiles(tiles[tileId + width]);
-    }, 50);
+    // }, 50);
   }
 
   //game over
   gameOver = (currentTile) => {
     this.setState({ isGameOver: true, isContainerAnimated: true})
-    console.log('game over')
     this.stopTimer();
-    // currentTile.innerHTML = this.state.bombIcon;
-    // currentTile.style.backgroundColor =
-      // this.state.bgColors[Math.floor(Math.random() * this.state.bgColors.length)];
-    // currentTile.classList.remove("has-bomb");
-
-    currentTile.checked = true
     let itemsProcessed = 0;
 
     // //show all the bombs
@@ -231,9 +226,10 @@ class App extends Component {
     );
     bombTiles.forEach((tile, index) => {
       setTimeout(() => {
-    //     tile.innerHTML = this.state.bombIcon;
-    //     tile.style.backgroundColor =
-    //       this.state.bgColors[Math.floor(Math.random() * this.state.bgColors.length)];
+        currentTile.checked = true
+
+        // tile.style.backgroundColor =
+          // this.state.bgColors[Math.floor(Math.random() * this.state.bgColors.length)];
     //     tile.classList.remove("has-bomb");
         tile.checked = true
         itemsProcessed++;
@@ -254,20 +250,19 @@ class App extends Component {
     if (!tile.checked && flags < this.state.selectedLevel.bombs) {
       if (!tile.flag) {
         tile.flag = true
-        tile.innerHTML = this.state.flagIcon;
+        // tile.innerHTML = this.state.flagIcon;
         flags++;
         const flagsLeft =  this.state.selectedLevel.bombs - flags;
         this.setState({flagsLeft, flags})
         this.checkForWin();
       } else {
         tile.flag = false
-        tile.innerHTML = "";
+        // tile.innerHTML = "";
         flags--;
         const flagsLeft =  this.state.selectedLevel.bombs - flags;
         this.setState({flagsLeft, flags})
       }
     }
-    // update tiles in state
   }
 
   //check for win
@@ -278,7 +273,6 @@ class App extends Component {
       if (matches === this.state.selectedLevel.bombs) {
         this.stopTimer();
         this.setState({ resultMessaqe: 'CONGRATULATIONS!', isResultTimeVisible: true, isModalOpen: true, isBombHappyFaceVisible: true, isGameOver: true })
-        console.log('win')
     // reveal all remaining tiles
         if (!tile.checked) tile.checked = true;
       }
@@ -305,8 +299,11 @@ class App extends Component {
   }
 
   stopTimer = () => {
+    console.log(this.state.timerCount)
     clearInterval(this.state.timerCount);
     this.setState({ isTimerOn: false })
+    console.log('timer stopped')
+    console.log(this.state.timerCount)
   }
 
    addElement = (x, y) => {
@@ -361,7 +358,14 @@ class App extends Component {
 
   onRightClick = (e) => {
     e.preventDefault();
-    const target = e.target.tagName === 'svg' ? e.target.parentNode.parentNode : e.target
+    let target;
+    if (e.target.tagName === 'svg') {
+      target = e.target.parentNode.parentNode
+    } else if (e.target.tagName === 'span') {
+      target = e.target.parentNode
+    } else {
+      target = e.target
+    }
     const tileId = parseInt(target.id);
     const currentTile = this.state.tiles.find(tile => tile.id === tileId)
     this.addFlag(currentTile);
@@ -398,27 +402,38 @@ class App extends Component {
 	}
 
   render() {
-
+    // console.log('RENDER')
     let grid = this.state.tiles.map((tile, index) => {
       if (tile.checked) {
-        let tileNumberColor, tileNumberShadow;
-        const tileNumber = tile.neighborBombs !== 0 ? tile.neighborBombs : null
-        const content = tile.class === "has-bomb" ? this.state.bombIcon : tileNumber
-        if (tile.neighborBombs !== 0) {
-          // tileNumberColor = this.state.numberColors[tile.neighborBombs - 1]
-          // tileNumberShadow = "1px 1px" + this.lightenDarkenColor(this.state.numberColors[tile.neighborBombs - 1], -20);
+        let content;
+        if (tile.class === "has-bomb") {
+          content = this.state.bombIcon
+          const bombBgColor = this.state.bgColors[Math.floor(Math.random() * this.state.bgColors.length)]
+          return (
+            <div key={index} id={index} className={`tile checked ${tile.class}`} onClick={(e) => this.handleTileClick(e)} onContextMenu={(e) => this.onRightClick(e)} neighborbombs={tile.neighborBombs} style={{backgroundColor: bombBgColor}}>
+              <span dangerouslySetInnerHTML={{__html: content}}/>
+            </div>
+          )
         } else {
-          // tileNumber = null
-          tileNumberColor = null
-          tileNumberShadow = null
+          if (tile.neighborBombs !== 0) {
+            const tileNumber = tile.neighborBombs !== 0 ? tile.neighborBombs : ''
+            let tileNumberColor = this.state.numberColors[tile.neighborBombs - 1]
+            let tileNumberShadow = "1px 1px" + this.lightenDarkenColor(tileNumberColor, -20);
+            content = tileNumber
+            return (
+              <div key={index} id={index} className={`tile checked ${tile.class}`} onClick={(e) => this.handleTileClick(e)} onContextMenu={(e) => this.onRightClick(e)} neighborbombs={tile.neighborBombs} style={{color: tileNumberColor, textShadow: tileNumberShadow }}>
+              {content}
+              </div>
+            )
+          } else {
+            return (
+              <div key={index} id={index} className={`tile checked ${tile.class}`} onClick={(e) => this.handleTileClick(e)} onContextMenu={(e) => this.onRightClick(e)} neighborbombs={tile.neighborBombs}>
+              </div>
+            )
+          }
         }
-        return (
-          <div key={index} id={index} className={`tile checked ${tile.class}`} onClick={(e) => this.handleTileClick(e)} onContextMenu={(e) => this.onRightClick(e)} neighborbombs={tile.neighborBombs}>
-          <span dangerouslySetInnerHTML={{__html: content}}/>
-          </div>
-        )
       } else {
-        const content = tile.flag ? this.state.flagIcon : null
+        const content = tile.flag ? this.state.flagIcon : ''
         return (
           <div key={index} id={index} className={`tile ${tile.class}`} onClick={(e) => this.handleTileClick(e)} onContextMenu={(e) => this.onRightClick(e)} neighborbombs={tile.neighborBombs}> <span dangerouslySetInnerHTML={{__html: content}} />
           </div>
@@ -457,7 +472,6 @@ class App extends Component {
           </symbol>
         </svg>
         <div id="background" ref={(el) => this.background = el}></div>
-        <button className="test-button" onClick={this.openModal}>Open modal</button>
         <div id="modal" className={this.state.isModalOpen ? 'show' : ''}>
           <div id="result-box">
             <div id="result-top">
