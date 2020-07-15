@@ -1,15 +1,16 @@
 // TO DO
 // 1. Fix slow rendering
 // 2. Add delay when revealing tiles and bombs
-// 3. Fix timer bug
-// 4. Add sass support
-// 5. Introduce compoenents: Board, Cells, Timer, Dropdown
+// 3. Fix bug when clicking on flag
+// 4. Introduce components: Board, Cells, Modal
 
 
 
 import React, { Component } from "react";
-// import { Header } from "./components/Header";
-import "./App.css";
+import { Timer } from "./components/Timer";
+import { Dropdown } from "./components/Dropdown";
+
+import "./styles.scss";
 
 class App extends Component {
   constructor(props) {
@@ -34,7 +35,6 @@ class App extends Component {
       ],
       flags: 0,
       tiles: [],
-      timerCount: 0,
       isGameOver: false,
       isTimerOn: false,
       isModalOpen: false,
@@ -42,9 +42,7 @@ class App extends Component {
       isBombHappyFaceVisible: false,
       isBombSadFaceVisible: false,
       isContainerAnimated: false,
-      isMenuVisible: false,
-      timeDisplay: '000',
-      finalTime: 0,
+      timeDisplay: 0,
       resultMessage: '',
       numberColors: ["#8B6AF5","#74c2f9","#42dfbc","#f9dd5b","#FEAC5E","#ff5d9e","#F29FF5","#c154d8"],
       bgColors:["#b39ffd","#93c1fd","#8af1f8","#f9dd5b","#FEAC5E","#f87dae","#f6b8f8", "#f7efce",],
@@ -74,8 +72,8 @@ class App extends Component {
 
   clearBoard = () => {
     console.clear();
-    if (this.state.isTimerOn) this.stopTimer();
-    this.setState({ timeDisplay: '000', timerCount: 0, flags: 0, isGameOver: false, tiles: [], isResultTimeVisible: false, isBombHappyFaceVisible: false, isBombSadFaceVisible: false, isContainerAnimated: false })
+    if (this.state.isTimerOn) this.refs.timer.stopTimer();
+    this.setState({ timeDisplay: 0, flags: 0, isGameOver: false, tiles: [], isResultTimeVisible: false, isBombHappyFaceVisible: false, isBombSadFaceVisible: false, isContainerAnimated: false, isTimerOn: false})
     this.createBoard();
   }
 
@@ -99,7 +97,6 @@ class App extends Component {
         ? tile.class = "has-bomb"
         : tile.class = "is-empty"
     )
-    // tiles.sort((a, b) => a.id - b.id); //sort array by id again
 
     //add numbers
     for (let i = 0; i < tiles.length; i++) {
@@ -147,15 +144,14 @@ class App extends Component {
   }
 
   handleTileClick = (e) => {
-    console.log('handle click', e.target)
     const clickedTileId = parseInt(e.target.id);
-    if (!this.state.isTimerOn) this.startTimer();
+    if (!this.state.isTimerOn) this.refs.timer.startTimer();
+    this.setState({ isTimerOn: true})
     this.clickTile(clickedTileId)
   }
 
   //click on tile 
   clickTile = (tileId) => {
-    console.log('clicked')
     const currentTile = this.state.tiles.find(tile => tile.id === tileId)
 
     if (this.state.isGameOver) return null;
@@ -180,7 +176,6 @@ class App extends Component {
         if (tile.id === tileId) tile.checked = true
       })
       this.setState({tiles})
-      console.log('processed')
   }
 
   //check neighboring tiles once tile is clicked
@@ -216,8 +211,8 @@ class App extends Component {
 
   //game over
   gameOver = (currentTile) => {
-    this.setState({ isGameOver: true, isContainerAnimated: true})
-    this.stopTimer();
+    this.setState({ isGameOver: true, isContainerAnimated: true, isTimerOn: false})
+    this.refs.timer.stopTimer()
     let itemsProcessed = 0;
 
     // //show all the bombs
@@ -225,12 +220,8 @@ class App extends Component {
       tile.class === "has-bomb"
     );
     bombTiles.forEach((tile, index) => {
-      setTimeout(() => {
+      // setTimeout(() => {
         currentTile.checked = true
-
-        // tile.style.backgroundColor =
-          // this.state.bgColors[Math.floor(Math.random() * this.state.bgColors.length)];
-    //     tile.classList.remove("has-bomb");
         tile.checked = true
         itemsProcessed++;
         if (itemsProcessed === bombTiles.length) {
@@ -239,7 +230,7 @@ class App extends Component {
               this.setState({isBombSadFaceVisible: true, resultMessaqe: 'Game Over!'})
           }, 1000);
         }
-      }, 10 * index);
+      // }, 10 * index);
     });
   }
 
@@ -271,8 +262,8 @@ class App extends Component {
     this.state.tiles.forEach((tile) => {
       if (tile.flag && tile.class === "has-bomb") matches++;
       if (matches === this.state.selectedLevel.bombs) {
-        this.stopTimer();
-        this.setState({ resultMessaqe: 'CONGRATULATIONS!', isResultTimeVisible: true, isModalOpen: true, isBombHappyFaceVisible: true, isGameOver: true })
+        this.setState({ resultMessaqe: 'CONGRATULATIONS!', isResultTimeVisible: true, isModalOpen: true, isBombHappyFaceVisible: true, isGameOver: true, isTimerOn: false })
+        this.refs.timer.stopTimer()
     // reveal all remaining tiles
         if (!tile.checked) tile.checked = true;
       }
@@ -284,26 +275,8 @@ class App extends Component {
     this.clearBoard();
   }
 
-  // timer functions
-  startTimer = () => {
-    this.setState({ isTimerOn: true})
-    let sec = 0;
-    const timerCount = setInterval(() => {
-      sec++;
-      const timeDisplay = ("00" + sec).slice(-3);
-      this.setState({timeDisplay})
-      if (sec > 998) clearInterval(timerCount);
-      this.setState({finalTime: sec})
-    }, 1000);
-    this.setState({timerCount})
-  }
-
-  stopTimer = () => {
-    console.log(this.state.timerCount)
-    clearInterval(this.state.timerCount);
-    this.setState({ isTimerOn: false })
-    console.log('timer stopped')
-    console.log(this.state.timerCount)
+  getTime = (time) => {
+    this.setState({ timeDisplay: time})
   }
 
    addElement = (x, y) => {
@@ -371,35 +344,20 @@ class App extends Component {
     this.addFlag(currentTile);
   }
 
-  // menu functions
-  expandMenu = () => {
-		this.setState({ isMenuVisible: true });
-	}
-	
-	collapseMenu = () => {
-		this.setState({ isMenuVisible: false });
+  updateLevel = (level) => {
+    console.log(level)
+    this.setState({selectedLevel: level }, () => this.clearBoard())
+    
   }
-  
-  handleMenuItemClick = (e) => {
-    const selectedLevel = this.state.levels.find((level) => level.difficulty === e.target.innerText);
-		this.setState({
-			isMenuVisible: false,
-			selectedLevel
-    }, () => this.clearBoard())
-	}
-	
-	toggleMenu = () => {
-		this.setState({ isMenuVisible: !this.state.isMenuVisible });
-  }
-  
+
   //modal functions
 	closeModal = () => { 
-    this.setState({ isModalOpen: false	});
+    this.setState({ isModalOpen: false });
 	}
 
 	openModal = () => {
 		this.setState({ isModalOpen: true });
-	}
+  }
 
   render() {
     // console.log('RENDER')
@@ -441,17 +399,6 @@ class App extends Component {
       }
 
     })
-
-    let dropdown;
-    if (this.state.isMenuVisible) {
-      dropdown = (
-        <div className="menu">
-          {this.state.levels.map((level) => {
-              return <div onClick={(e) => { this.handleMenuItemClick(e); }} className="option" key={level.id} value={level.difficulty}>{level.difficulty}</div>;
-            })}
-        </div>
-      );
-    }
 
     return (
       <div>
@@ -497,7 +444,7 @@ class App extends Component {
                 </g>
               </svg>
               <h1 id="result-message" >{this.state.resultMessaqe}</h1>
-              <h2 className={`result-time ${this.state.isResultTimeVisible ? "show" : ""}`}>Your time: <span className="time-display">{this.state.finalTime}</span> seconds</h2>
+              <h2 className={`result-time ${this.state.isResultTimeVisible ? "show" : ""}`}>Your time: <span className="time-display">{this.state.timeDisplay}</span> seconds</h2>
             </div>
             <div id="new-game" onClick={this.replay}>
               <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 512 512" fill="#fff" width="30">
@@ -510,16 +457,10 @@ class App extends Component {
           </div>
         </div>
         <div className={`container ${this.state.isContainerAnimated ? "shake" : ""}`}>
-            <div className="header">
-            <div className={`dropdown`}
-            onBlur={() => {this.collapseMenu()}}>
-            <div className="title" onClick={() => {this.toggleMenu()}}>
-              {this.state.selectedLevel.difficulty}
-            </div>
-            {dropdown}
-          </div>
-          <div id='flag-countdown'><svg xmlns="http://www.w3.org/2000/svg" version="1.1" id="Capa_1" x="0px" y="0px" viewBox="0 0 287.987 287.987" fill="#fff" width="30"><g><path d="M228.702,141.029c-3.114-3.754-3.114-9.193,0-12.946l33.58-40.474c2.509-3.024,3.044-7.226,1.374-10.783   c-1.671-3.557-5.246-5.828-9.176-5.828h-57.647v60.98c0,16.618-13.52,30.138-30.138,30.138h-47.093v25.86   c0,5.599,4.539,10.138,10.138,10.138h124.74c3.93,0,7.505-2.271,9.176-5.828c1.671-3.557,1.135-7.759-1.374-10.783L228.702,141.029   z"/><path d="M176.832,131.978V25.138c0-5.599-4.539-10.138-10.138-10.138H53.37c0-8.284-6.716-15-15-15s-15,6.716-15,15   c0,7.827,0,253.91,0,257.987c0,8.284,6.716,15,15,15s15-6.716,15-15c0-6.943,0-126.106,0-130.871h113.324   C172.293,142.116,176.832,137.577,176.832,131.978z"/></g></svg><span id='flags-left'>{this.state.flagsLeft}</span></div>
-          <div id="timer"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" id="Capa_1" x="0px" y="0px" viewBox="0 0 559.98 559.98"  fill="#fff" width="30px"><g><path d="M279.99,0C125.601,0,0,125.601,0,279.99c0,154.39,125.601,279.99,279.99,279.99c154.39,0,279.99-125.601,279.99-279.99    C559.98,125.601,434.38,0,279.99,0z M279.99,498.78c-120.644,0-218.79-98.146-218.79-218.79    c0-120.638,98.146-218.79,218.79-218.79s218.79,98.152,218.79,218.79C498.78,400.634,400.634,498.78,279.99,498.78z"/><path d="M304.226,280.326V162.976c0-13.103-10.618-23.721-23.716-23.721c-13.102,0-23.721,10.618-23.721,23.721v124.928    c0,0.373,0.092,0.723,0.11,1.096c-0.312,6.45,1.91,12.999,6.836,17.926l88.343,88.336c9.266,9.266,24.284,9.266,33.543,0    c9.26-9.266,9.266-24.284,0-33.544L304.226,280.326z"/></g></svg><span className="counter">{this.state.timeDisplay}</span></div>
+          <div className="header">
+            <Dropdown onLevelChange={this.updateLevel} levels={this.state.levels} selectedLevel={this.state.selectedLevel}/>
+            <div id='flag-countdown'><svg xmlns="http://www.w3.org/2000/svg" version="1.1" id="Capa_1" x="0px" y="0px" viewBox="0 0 287.987 287.987" fill="#fff" width="30"><g><path d="M228.702,141.029c-3.114-3.754-3.114-9.193,0-12.946l33.58-40.474c2.509-3.024,3.044-7.226,1.374-10.783   c-1.671-3.557-5.246-5.828-9.176-5.828h-57.647v60.98c0,16.618-13.52,30.138-30.138,30.138h-47.093v25.86   c0,5.599,4.539,10.138,10.138,10.138h124.74c3.93,0,7.505-2.271,9.176-5.828c1.671-3.557,1.135-7.759-1.374-10.783L228.702,141.029   z"/><path d="M176.832,131.978V25.138c0-5.599-4.539-10.138-10.138-10.138H53.37c0-8.284-6.716-15-15-15s-15,6.716-15,15   c0,7.827,0,253.91,0,257.987c0,8.284,6.716,15,15,15s15-6.716,15-15c0-6.943,0-126.106,0-130.871h113.324   C172.293,142.116,176.832,137.577,176.832,131.978z"/></g></svg><span id='flags-left'>{this.state.flagsLeft} </span></div>
+            <Timer ref="timer" onTimeChange={this.getTime} timeDisplay={this.state.timeDisplay}/>
 
         </div>
         <div className="grid">{grid}</div>
