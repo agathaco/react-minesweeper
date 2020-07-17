@@ -1,7 +1,4 @@
-// TO DO
 // 1. Add delay when revealing tiles and bombs
-// 2. Fix bug when clicking on flag
-// 3. Hide Modal before removing elements
 
 import React, { Component } from "react";
 import { Timer } from "./components/Timer";
@@ -9,7 +6,6 @@ import { Dropdown } from "./components/Dropdown";
 import { Tile } from "./components/Tile";
 import Modal from "./components/Modal";
 import Utils from './utils'
-
 
 import "./styles.scss";
 
@@ -41,6 +37,7 @@ class App extends Component {
       isModalOpen: false,
       isContainerAnimated: false,
       timeDisplay: 0,
+      flagCount: 0,
       mainColors: ["#8B6AF5","#74c2f9","#42dfbc","#f9dd5b","#FEAC5E","#ff5d9e","#F29FF5","#c154d8"],
       bgColors:["#b39ffd","#93c1fd","#8af1f8","#f9dd5b","#FEAC5E","#f87dae","#f6b8f8", "#f7efce"],
     }
@@ -66,7 +63,7 @@ class App extends Component {
   clearBoard = () => {
     console.clear();
     if (this.state.isTimerOn) this.refs.timer.stopTimer();
-    this.setState({ timeDisplay: 0, isGameOver: false, tiles: [], gameResult: '',  isContainerAnimated: false, isTimerOn: false})
+    this.setState({ timeDisplay: 0, isGameOver: false, tiles: [], gameResult: '',  isContainerAnimated: false, isTimerOn: false, flagCount:0})
     this.createBoard();
   }
 
@@ -229,34 +226,23 @@ class App extends Component {
   //add Flag with right click
   addFlag = (tileId) => {
     const tile = this.state.tiles.find(tile => tile.id === tileId)
-    console.log(tileId, tile)
 
     if (this.state.isGameOver) return;
-    let flags = 0;
-    if (!tile.checked && flags < this.state.selectedLevel.bombs) {
-      if (!tile.flag) {
-        tile.flag = true
-        flags++;
-        const flagsLeft =  this.state.selectedLevel.bombs - flags;
-        this.setState({flagsLeft})
-        this.checkForWin();
-      } else {
+    let { flagCount } = this.state;
+    if (!tile.checked) {
+      if (!tile.flag && flagCount < this.state.selectedLevel.bombs) {
+          tile.flag = true
+          flagCount++;
+          const flagsLeft =  this.state.selectedLevel.bombs - flagCount;
+          this.setState({flagsLeft, flagCount})
+          this.checkForWin();
+      } else if (tile.flag){
         tile.flag = false
-        flags--;
-        const flagsLeft =  this.state.selectedLevel.bombs - flags;
-        this.setState({flagsLeft})
+        flagCount--;
+        const flagsLeft =  this.state.selectedLevel.bombs - flagCount;
+        this.setState({flagsLeft, flagCount})
       }
     }
-    console.log(tile)
-    const tiles = [...this.state.tiles]
-    tiles.forEach(tile => {
-      if (tile.id === tileId) tile.flag = true
-    })
-    this.setState({tiles})
-  }
-
-  updateFlagCount = () => {
-
   }
 
   //check for win
@@ -274,7 +260,7 @@ class App extends Component {
 
   replay = () => {
     if (this.state.isModalOpen) this.closeModal();
-    this.clearBoard();
+    setTimeout(() => {this.clearBoard()}, 80)
   }
 
   updateLevel = (level) => {
@@ -351,7 +337,7 @@ class App extends Component {
           </symbol>
         </svg>
         <div id="background" ref={(el) => this.background = el}></div>
-        <Modal gameResult={this.state.gameResult} show={this.state.isModalOpen} onReplay={this.replay}/>
+        <Modal gameResult={this.state.gameResult} show={this.state.isModalOpen} onReplay={this.replay} timeDisplay={this.state.timeDisplay}/>
         <div className={`container ${this.state.isContainerAnimated ? "shake" : ""}`}>
           <div className="header">
             <Dropdown onLevelChange={this.updateLevel} levels={this.state.levels} selectedLevel={this.state.selectedLevel}/>

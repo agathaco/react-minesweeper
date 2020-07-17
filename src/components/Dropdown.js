@@ -33,14 +33,14 @@ export class Dropdown extends Component {
       );
     }
     return (
-        <div>
-          <div className="dropdown" onBlur={() => {this.closeMenu()}}>
-              <div className="title" onClick={() => {this.toggleMenu()}}>
-                {this.props.selectedLevel.difficulty}
-              </div>
-              {dropdown}
-          </div>
+      <div>
+        <div className="dropdown" onBlur={() => {this.closeMenu()}}>
+            <div className="title" onClick={() => {this.toggleMenu()}}>
+              {this.props.selectedLevel.difficulty}
+            </div>
+            {dropdown}
         </div>
+      </div>
     )
   }
 }

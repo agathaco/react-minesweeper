@@ -1,5 +1,4 @@
 export default class Utils {
-
     static lightenDarkenColor = (col, amt) => {
     let usePound = false;
     if (col[0] === "#") {
