@@ -67,10 +67,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.tile svg{
-  width: 80%;
+   svg {
+    width: 80%;
+    top:10%;
+    position: relative;
+   }
+   .tile-container {
+     height:100%
+   }
 }
 
 .checked {
@@ -92,7 +96,6 @@ body {
   font-family: Verdana, Geneva, Tahoma, sans-serif;
   font-size: 1rem;
   text-align: center;
-
   .title {
     width: 100%;
     padding:0.5rem 1rem;
@@ -107,6 +110,7 @@ body {
     width: 5rem;
     text-align: left;
     line-height:1.4rem;
+    z-index: 999;
     &.show {
       display:block;
     }
@@ -227,9 +231,9 @@ body {
 svg#bomb{
   width: 200px;
   .sad-face, .happy-face {
-    display: none;
+    // display: none;
     &.show {
-      display: block;
+      // display: block;
     }
   }
   .bomb-fill {

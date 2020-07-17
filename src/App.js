@@ -1,14 +1,15 @@
 // TO DO
-// 1. Fix slow rendering
-// 2. Add delay when revealing tiles and bombs
-// 3. Fix bug when clicking on flag
-// 4. Introduce components: Board, Cells, Modal
-
-
+// 1. Add delay when revealing tiles and bombs
+// 2. Fix bug when clicking on flag
+// 3. Hide Modal before removing elements
 
 import React, { Component } from "react";
 import { Timer } from "./components/Timer";
 import { Dropdown } from "./components/Dropdown";
+import { Tile } from "./components/Tile";
+import Modal from "./components/Modal";
+import Utils from './utils'
+
 
 import "./styles.scss";
 
@@ -29,31 +30,23 @@ class App extends Component {
         },
         { id: 2,
           difficulty: "Hard",
-          width: 20,
+          width: 18,
           bombs: 70,
         },
       ],
-      flags: 0,
       tiles: [],
       isGameOver: false,
+      gameResult: '',
       isTimerOn: false,
       isModalOpen: false,
-      isResultTimeVisible: false,
-      isBombHappyFaceVisible: false,
-      isBombSadFaceVisible: false,
       isContainerAnimated: false,
       timeDisplay: 0,
-      resultMessage: '',
-      numberColors: ["#8B6AF5","#74c2f9","#42dfbc","#f9dd5b","#FEAC5E","#ff5d9e","#F29FF5","#c154d8"],
-      bgColors:["#b39ffd","#93c1fd","#8af1f8","#f9dd5b","#FEAC5E","#f87dae","#f6b8f8", "#f7efce",],
+      mainColors: ["#8B6AF5","#74c2f9","#42dfbc","#f9dd5b","#FEAC5E","#ff5d9e","#F29FF5","#c154d8"],
+      bgColors:["#b39ffd","#93c1fd","#8af1f8","#f9dd5b","#FEAC5E","#f87dae","#f6b8f8", "#f7efce"],
     }
     this.state.root = document.documentElement;
     this.state.selectedLevel = this.state.levels[0];
-    this.state.flagsLeft = 0;
-    this.state.flagIcon =
-    '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="Capa_1" x="0px" y="0px" viewBox="0 0 287.987 287.987" fill="#695ca8" style="enable-background:new 0 0 287.987 287.987;" xml:space="preserve"><g><path d="M228.702,141.029c-3.114-3.754-3.114-9.193,0-12.946l33.58-40.474c2.509-3.024,3.044-7.226,1.374-10.783   c-1.671-3.557-5.246-5.828-9.176-5.828h-57.647v60.98c0,16.618-13.52,30.138-30.138,30.138h-47.093v25.86   c0,5.599,4.539,10.138,10.138,10.138h124.74c3.93,0,7.505-2.271,9.176-5.828c1.671-3.557,1.135-7.759-1.374-10.783L228.702,141.029   z"/><path d="M176.832,131.978V25.138c0-5.599-4.539-10.138-10.138-10.138H53.37c0-8.284-6.716-15-15-15s-15,6.716-15,15   c0,7.827,0,253.91,0,257.987c0,8.284,6.716,15,15,15s15-6.716,15-15c0-6.943,0-126.106,0-130.871h113.324   C172.293,142.116,176.832,137.577,176.832,131.978z"/></g></svg>';
-    this.state.bombIcon =
-    '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 512 512" fill="#695ca8" ><g><path d="m411.313,123.313c6.25-6.25 6.25-16.375 0-22.625s-16.375-6.25-22.625,0l-32,32-9.375,9.375-20.688-20.688c-12.484-12.5-32.766-12.5-45.25,0l-16,16c-1.261,1.261-2.304,2.648-3.31,4.051-21.739-8.561-45.324-13.426-70.065-13.426-105.867,0-192,86.133-192,192s86.133,192 192,192 192-86.133 192-192c0-24.741-4.864-48.327-13.426-70.065 1.402-1.007 2.79-2.049 4.051-3.31l16-16c12.5-12.492 12.5-32.758 0-45.25l-20.688-20.688 9.375-9.375 32.001-31.999zm-219.313,100.687c-52.938,0-96,43.063-96,96 0,8.836-7.164,16-16,16s-16-7.164-16-16c0-70.578 57.422-128 128-128 8.836,0 16,7.164 16,16s-7.164,16-16,16z"/><path d="m459.02,148.98c-6.25-6.25-16.375-6.25-22.625,0s-6.25,16.375 0,22.625l16,16c3.125,3.125 7.219,4.688 11.313,4.688 4.094,0 8.188-1.563 11.313-4.688 6.25-6.25 6.25-16.375 0-22.625l-16.001-16z"/><path d="m340.395,75.605c3.125,3.125 7.219,4.688 11.313,4.688 4.094,0 8.188-1.563 11.313-4.688 6.25-6.25 6.25-16.375 0-22.625l-16-16c-6.25-6.25-16.375-6.25-22.625,0s-6.25,16.375 0,22.625l15.999,16z"/><path d="m400,64c8.844,0 16-7.164 16-16v-32c0-8.836-7.156-16-16-16-8.844,0-16,7.164-16,16v32c0,8.836 7.156,16 16,16z"/><path d="m496,96.586h-32c-8.844,0-16,7.164-16,16 0,8.836 7.156,16 16,16h32c8.844,0 16-7.164 16-16 0-8.836-7.156-16-16-16z"/><path d="m436.98,75.605c3.125,3.125 7.219,4.688 11.313,4.688 4.094,0 8.188-1.563 11.313-4.688l32-32c6.25-6.25 6.25-16.375 0-22.625s-16.375-6.25-22.625,0l-32,32c-6.251,6.25-6.251,16.375-0.001,22.625z"/></g></svg>';
+    this.state.flagsLeft = this.state.selectedLevel.bombs;
   }
 
   componentDidMount() {
@@ -62,18 +55,18 @@ class App extends Component {
   }
 
   getMainColor = () => {
-    const randomColor = this.state.numberColors[Math.floor(Math.random() * this.state.numberColors.length)];
+    const randomColor = this.state.mainColors[Math.floor(Math.random() * this.state.mainColors.length)];
     this.state.root.style.setProperty("--main-color", randomColor);
     this.state.root.style.setProperty(
       "--dark-color",
-      this.lightenDarkenColor(randomColor, -50)
+      Utils.lightenDarkenColor(randomColor, -50)
     );
   }
 
   clearBoard = () => {
     console.clear();
     if (this.state.isTimerOn) this.refs.timer.stopTimer();
-    this.setState({ timeDisplay: 0, flags: 0, isGameOver: false, tiles: [], isResultTimeVisible: false, isBombHappyFaceVisible: false, isBombSadFaceVisible: false, isContainerAnimated: false, isTimerOn: false})
+    this.setState({ timeDisplay: 0, isGameOver: false, tiles: [], gameResult: '',  isContainerAnimated: false, isTimerOn: false})
     this.createBoard();
   }
 
@@ -87,16 +80,17 @@ class App extends Component {
 
     const tiles = []
     for (let i = 0; i < width * width; i++) {
-      tiles.push({id: i, checked: false})
+      tiles.push({ id: i, checked: false, hasBomb: false })
     }
 
     //add bombs
     const randomTiles = tiles.map(tile => tile.id).sort(() => Math.random() - 0.5).slice(0, this.state.selectedLevel.bombs)
-    tiles.forEach((tile) =>
-      randomTiles.includes(tile.id)
-        ? tile.class = "has-bomb"
-        : tile.class = "is-empty"
-    )
+    tiles.forEach((tile) => {
+      if (randomTiles.includes(tile.id)) {
+        tile.hasBomb = true
+        tile.bgColor = this.state.bgColors[Math.floor(Math.random() * this.state.bgColors.length)];
+      }
+    })
 
     //add numbers
     for (let i = 0; i < tiles.length; i++) {
@@ -104,43 +98,43 @@ class App extends Component {
       const isLeftEdge = i % width === 0;
       const isRightEdge = i % width === width - 1;
 
-      if (tiles[i].class === "is-empty") {
+      if (!tiles[i].hasBomb) {
         if (!isLeftEdge) {
-          if (tiles[i - 1] && tiles[i - 1].class === "has-bomb")
+          if (tiles[i - 1] && tiles[i - 1].hasBomb)
             total++;
           if (
             tiles[i - 1 + width] &&
-            tiles[i - 1 + width].class === "has-bomb"
+            tiles[i - 1 + width].hasBomb
           )
             total++;
           if (
             tiles[i - 1 - width] &&
-            tiles[i - 1 - width].class === "has-bomb"
+            tiles[i - 1 - width].hasBomb
           )
             total++;
         }
 
         if (!isRightEdge) {
-          if (tiles[i + 1] && tiles[i + 1].class === "has-bomb")
+          if (tiles[i + 1] && tiles[i + 1].hasBomb)
             total++;
           if (
             tiles[i + 1 + width] &&
-            tiles[i + 1 + width].class === "has-bomb"
+            tiles[i + 1 + width].hasBomb
           )
             total++;
           if (
             tiles[i + 1 - width] &&
-            tiles[i + 1 - width].class === "has-bomb"
+            tiles[i + 1 - width].hasBomb
           )
             total++;
         }
 
-        if (tiles[i - width] && tiles[i - width].class === "has-bomb") total++;
-        if (tiles[i + width] && tiles[i + width].class === "has-bomb") total++;
+        if (tiles[i - width] && tiles[i - width].hasBomb) total++;
+        if (tiles[i + width] && tiles[i + width].hasBomb) total++;
         tiles[i].neighborBombs = total;
       }
     }
-    this.setState({ tiles: tiles, flagsLeft: this.state.selectedLevel.bombs})
+    this.setState({ tiles, flagsLeft: this.state.selectedLevel.bombs })
   }
 
   handleTileClick = (e) => {
@@ -150,7 +144,7 @@ class App extends Component {
     this.clickTile(clickedTileId)
   }
 
-  //click on tile 
+  // click on tile
   clickTile = (tileId) => {
     const currentTile = this.state.tiles.find(tile => tile.id === tileId)
 
@@ -158,14 +152,14 @@ class App extends Component {
     if (currentTile.checked || currentTile.flag) {
       return null;
     }
-    if (currentTile.class === "has-bomb") {
+    if (currentTile.hasBomb) {
       this.gameOver(currentTile);
     } else {
       let total = currentTile.neighborBombs ? currentTile.neighborBombs : 0;
 
       if (total !== 0) {
         currentTile.checked = true
-        currentTile.color = this.state.numberColors[currentTile.neighborBombs - 1];
+        currentTile.color = this.state.mainColors[currentTile.neighborBombs - 1];
         return
       }
     }
@@ -209,17 +203,16 @@ class App extends Component {
     // }, 50);
   }
 
-  //game over
   gameOver = (currentTile) => {
-    this.setState({ isGameOver: true, isContainerAnimated: true, isTimerOn: false})
+    this.setState({ isGameOver: true, isContainerAnimated: true, isTimerOn: false, gameResult: 'lost'})
     this.refs.timer.stopTimer()
     let itemsProcessed = 0;
 
     // //show all the bombs
     const bombTiles = this.state.tiles.filter((tile) =>
-      tile.class === "has-bomb"
+      tile.hasBomb
     );
-    bombTiles.forEach((tile, index) => {
+    bombTiles.forEach((tile) => {
       // setTimeout(() => {
         currentTile.checked = true
         tile.checked = true
@@ -227,44 +220,53 @@ class App extends Component {
         if (itemsProcessed === bombTiles.length) {
           setTimeout(() => {
               this.openModal()
-              this.setState({isBombSadFaceVisible: true, resultMessaqe: 'Game Over!'})
           }, 1000);
         }
-      // }, 10 * index);
+      // }, 10 );
     });
   }
 
   //add Flag with right click
-  addFlag = (tile) => {
-    let flags = this.state.flags
+  addFlag = (tileId) => {
+    const tile = this.state.tiles.find(tile => tile.id === tileId)
+    console.log(tileId, tile)
+
     if (this.state.isGameOver) return;
+    let flags = 0;
     if (!tile.checked && flags < this.state.selectedLevel.bombs) {
       if (!tile.flag) {
         tile.flag = true
-        // tile.innerHTML = this.state.flagIcon;
         flags++;
         const flagsLeft =  this.state.selectedLevel.bombs - flags;
-        this.setState({flagsLeft, flags})
+        this.setState({flagsLeft})
         this.checkForWin();
       } else {
         tile.flag = false
-        // tile.innerHTML = "";
         flags--;
         const flagsLeft =  this.state.selectedLevel.bombs - flags;
-        this.setState({flagsLeft, flags})
+        this.setState({flagsLeft})
       }
     }
+    console.log(tile)
+    const tiles = [...this.state.tiles]
+    tiles.forEach(tile => {
+      if (tile.id === tileId) tile.flag = true
+    })
+    this.setState({tiles})
+  }
+
+  updateFlagCount = () => {
+
   }
 
   //check for win
   checkForWin = () => {
     let matches = 0;
     this.state.tiles.forEach((tile) => {
-      if (tile.flag && tile.class === "has-bomb") matches++;
+      if (tile.flag && tile.hasBomb) matches++;
       if (matches === this.state.selectedLevel.bombs) {
-        this.setState({ resultMessaqe: 'CONGRATULATIONS!', isResultTimeVisible: true, isModalOpen: true, isBombHappyFaceVisible: true, isGameOver: true, isTimerOn: false })
+        this.setState({ gameResult: 'won', isModalOpen: true, isGameOver: true, isTimerOn: false })
         this.refs.timer.stopTimer()
-    // reveal all remaining tiles
         if (!tile.checked) tile.checked = true;
       }
     })
@@ -275,11 +277,24 @@ class App extends Component {
     this.clearBoard();
   }
 
-  getTime = (time) => {
-    this.setState({ timeDisplay: time})
+  updateLevel = (level) => {
+    this.setState({selectedLevel: level }, () => this.clearBoard())
   }
 
-   addElement = (x, y) => {
+  //modal functions
+	closeModal = () => { 
+    this.setState({ isModalOpen: false });
+	}
+
+	openModal = () => {
+		this.setState({ isModalOpen: true });
+  }
+
+  getTime = (time) => {
+    this.setState({ timeDisplay: time })
+  }
+
+  addElement = (x, y) => {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
     use.setAttributeNS(
@@ -293,7 +308,7 @@ class App extends Component {
     this.background.appendChild(svg);
   }
 
-   createBackground = () => {
+  createBackground = () => {
     const spacing = 60;
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -310,94 +325,11 @@ class App extends Component {
     }
   }
 
-  lightenDarkenColor = (col, amt) => {
-    let usePound = false;
-    if (col[0] === "#") {
-      col = col.slice(1);
-      usePound = true;
-    }
-    let num = parseInt(col, 16);
-    let r = (num >> 16) + amt;
-    if (r > 255) r = 255;
-    else if (r < 0) r = 0;
-    let b = ((num >> 8) & 0x00ff) + amt;
-    if (b > 255) b = 255;
-    else if (b < 0) b = 0;
-    let g = (num & 0x0000ff) + amt;
-    if (g > 255) g = 255;
-    else if (g < 0) g = 0;
-    return (usePound ? "#" : "") + (g | (b << 8) | (r << 16)).toString(16);
-  }
-
-  onRightClick = (e) => {
-    e.preventDefault();
-    let target;
-    if (e.target.tagName === 'svg') {
-      target = e.target.parentNode.parentNode
-    } else if (e.target.tagName === 'span') {
-      target = e.target.parentNode
-    } else {
-      target = e.target
-    }
-    const tileId = parseInt(target.id);
-    const currentTile = this.state.tiles.find(tile => tile.id === tileId)
-    this.addFlag(currentTile);
-  }
-
-  updateLevel = (level) => {
-    console.log(level)
-    this.setState({selectedLevel: level }, () => this.clearBoard())
-    
-  }
-
-  //modal functions
-	closeModal = () => { 
-    this.setState({ isModalOpen: false });
-	}
-
-	openModal = () => {
-		this.setState({ isModalOpen: true });
-  }
-
   render() {
-    // console.log('RENDER')
     let grid = this.state.tiles.map((tile, index) => {
-      if (tile.checked) {
-        let content;
-        if (tile.class === "has-bomb") {
-          content = this.state.bombIcon
-          const bombBgColor = this.state.bgColors[Math.floor(Math.random() * this.state.bgColors.length)]
-          return (
-            <div key={index} id={index} className={`tile checked ${tile.class}`} onClick={(e) => this.handleTileClick(e)} onContextMenu={(e) => this.onRightClick(e)} neighborbombs={tile.neighborBombs} style={{backgroundColor: bombBgColor}}>
-              <span dangerouslySetInnerHTML={{__html: content}}/>
-            </div>
-          )
-        } else {
-          if (tile.neighborBombs !== 0) {
-            const tileNumber = tile.neighborBombs !== 0 ? tile.neighborBombs : ''
-            let tileNumberColor = this.state.numberColors[tile.neighborBombs - 1]
-            let tileNumberShadow = "1px 1px" + this.lightenDarkenColor(tileNumberColor, -20);
-            content = tileNumber
-            return (
-              <div key={index} id={index} className={`tile checked ${tile.class}`} onClick={(e) => this.handleTileClick(e)} onContextMenu={(e) => this.onRightClick(e)} neighborbombs={tile.neighborBombs} style={{color: tileNumberColor, textShadow: tileNumberShadow }}>
-              {content}
-              </div>
-            )
-          } else {
-            return (
-              <div key={index} id={index} className={`tile checked ${tile.class}`} onClick={(e) => this.handleTileClick(e)} onContextMenu={(e) => this.onRightClick(e)} neighborbombs={tile.neighborBombs}>
-              </div>
-            )
-          }
-        }
-      } else {
-        const content = tile.flag ? this.state.flagIcon : ''
-        return (
-          <div key={index} id={index} className={`tile ${tile.class}`} onClick={(e) => this.handleTileClick(e)} onContextMenu={(e) => this.onRightClick(e)} neighborbombs={tile.neighborBombs}> <span dangerouslySetInnerHTML={{__html: content}} />
-          </div>
-        )
-      }
-
+      return (
+        <Tile key={index} id={index} tile={tile} onTileClick={this.handleTileClick} onAddFlag={this.addFlag}/>
+      )
     })
 
     return (
@@ -419,43 +351,7 @@ class App extends Component {
           </symbol>
         </svg>
         <div id="background" ref={(el) => this.background = el}></div>
-        <div id="modal" className={this.state.isModalOpen ? 'show' : ''}>
-          <div id="result-box">
-            <div id="result-top">
-              <svg id="bomb" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 774.7 676.2">
-                <path d="M427.4,144.2l40.7-41.8a23.1,23.1,0,0,1,32.5,0l72.8,72.8a23.1,23.1,0,0,1,0,32.5l-37.4,37.4" transform="translate(0 -11.6)" fill="#8b6af5" stroke="#39395b" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="17" className="bomb-stroke bomb-fill"/>
-                <circle cx="291.1" cy="385.2" r="282.6" fill="#8b6af5" stroke="#39395b" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="17" className="bomb-stroke bomb-fill"/>
-                <path d="M540.2,141.2l15.4-20.5c12.6-16.8,30.4-17.7,43.6-2.4l0.3,0.3c11.8,13.7,31.3,22.6,48.3,11.4,6.1-4,20.7-20.5,20.7-20.5" transform="translate(0 -11.6)" fill="none" stroke="#39395b" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="17" className="bomb-stroke"/>
-                <line x1="701.7" y1="63.3" x2="742" y2="23.1" fill="none" stroke="#39395b" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="17" className="bomb-stroke"/>
-                <line x1="713.2" y1="107.4" x2="766.2" y2="128.2" fill="none" stroke="#39395b" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="17" className="bomb-stroke"/>
-                <line x1="654.5" y1="60.2" x2="630.8" y2="8.5" fill="none" stroke="#39395b" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="17" className="bomb-stroke"/>
-                <path d="M82,396.8c0-118.4,95.9-214.3,214.3-214.3" transform="translate(0 -11.6)" fill="none" stroke="#fff" strokeLinecap="round" strokeMiterlimit="10" strokeOpacity="0.45" strokeWidth="17"/>
-                <g id="happy-face" style={{display: this.state.isBombHappyFaceVisible ? 'block' : 'none'}}>
-                  <path d="M170.4,432.1a34.6,34.6,0,0,1,69.2,0" transform="translate(0 -11.6)" fill="none" stroke="#39395b" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="17" className="bomb-stroke"/>
-                  <path d="M342.5,432.1a34.6,34.6,0,0,1,69.2,0" transform="translate(0 -11.6)" fill="none" stroke="#39395b" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="17" className="bomb-stroke"/>
-                  <path d="M367,481.7c0,33.7-33.4,64.1-74.6,64.1s-74.6-30.3-74.6-64.1" transform="translate(0 -11.6)" fill="none" stroke="#39395b" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="17" className="bomb-stroke"/>
-                </g>
-                <g id="sad-face" style={{display: this.state.isBombSadFaceVisible ? 'block' : 'none'}}>
-                  <g>
-                    <circle cx="377.1" cy="406" r="17.7" fill="#39395b" className="bomb-fill-dark"/>
-                    <path d="M250,517.1c0-19.2,17.6-42.5,41.1-42.5s43.8,23.3,43.8,42.5" transform="translate(0 -11.6)" fill="none" stroke="#39395b" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="17" className="bomb-stroke"/>
-                    <circle cx="205" cy="406" r="17.7" fill="#39395b" className="bomb-fill-dark"/>
-                  </g>
-                </g>
-              </svg>
-              <h1 id="result-message" >{this.state.resultMessaqe}</h1>
-              <h2 className={`result-time ${this.state.isResultTimeVisible ? "show" : ""}`}>Your time: <span className="time-display">{this.state.timeDisplay}</span> seconds</h2>
-            </div>
-            <div id="new-game" onClick={this.replay}>
-              <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 512 512" fill="#fff" width="30">
-                <g>
-                  <path d="M480.6,235.6c-11.3,0-20.4,9.1-20.4,20.4c0,112.6-91.6,204.2-204.2,204.2c-112.6,0-204.2-91.6-204.2-204.2   S143.4,51.8,256,51.8c61.5,0,118.5,27.1,157.1,73.7h-70.5c-11.3,0-20.4,9.1-20.4,20.4s9.1,20.4,20.4,20.4h114.6   c11.3,0,20.4-9.1,20.4-20.4V31.4c0-11.3-9.1-20.4-20.4-20.4s-20.4,9.1-20.4,20.4v59C390.7,40.1,325.8,11,256,11   C120.9,11,11,120.9,11,256c0,135.1,109.9,245,245,245s245-109.9,245-245C501,244.7,491.9,235.6,480.6,235.6z"/>
-                </g>
-              </svg>
-              <h2>New Game</h2>
-            </div>
-          </div>
-        </div>
+        <Modal gameResult={this.state.gameResult} show={this.state.isModalOpen} onReplay={this.replay}/>
         <div className={`container ${this.state.isContainerAnimated ? "shake" : ""}`}>
           <div className="header">
             <Dropdown onLevelChange={this.updateLevel} levels={this.state.levels} selectedLevel={this.state.selectedLevel}/>
